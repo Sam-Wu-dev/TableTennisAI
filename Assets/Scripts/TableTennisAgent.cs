@@ -286,7 +286,7 @@ public class TableTennisAgent : Agent
         Ball.position = new Vector3(Random.Range(defaultBallPos.x - 0.5f, defaultBallPos.x + 0.5f), defaultBallPos.y, defaultBallPos.z); 
 
         // Reset the rigidbody
-        ballRb.velocity = Vector3.zero;
+        ballRb.linearVelocity = Vector3.zero;
         ballRb.angularVelocity = Vector3.zero;
 
         // Make it ready to hit
@@ -322,7 +322,7 @@ public class TableTennisAgent : Agent
         sensor.AddObservation(Racket.localEulerAngles);
 
         // Observe ball's velocity (3 Observations)
-        sensor.AddObservation(ballRb.velocity);
+        sensor.AddObservation(ballRb.linearVelocity);
 
         // 18 observations (15->18 changed)
     }

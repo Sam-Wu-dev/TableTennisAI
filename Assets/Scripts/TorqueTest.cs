@@ -18,7 +18,7 @@ public class TorqueTest : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.maxAngularVelocity = float.PositiveInfinity;
         // StartCoroutine(nameof(Move),new Vector3(0, 1, 0));
-        rb.velocity = Velocity;
+        rb.linearVelocity = Velocity;
         rb.angularVelocity = new Vector3(AngularVelocity, 0, 0) * Mathf.PI; // rad/s    1 round: 2PI     2round: 4PI
     }
 
