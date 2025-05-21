@@ -10228,6 +10228,16 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1340861209773570573, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3431964156425641646, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_TagString
+      value: Untagged
+      objectReference: {fileID: 0}
     - target: {fileID: 3786391237795243176, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_RootOrder
@@ -10339,6 +10349,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7385408066146283567, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_TagString
+      value: table
+      objectReference: {fileID: 0}
+    - target: {fileID: 7819659860262561783, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_TagString
+      value: table
       objectReference: {fileID: 0}
     - target: {fileID: 8560351063863894430, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}

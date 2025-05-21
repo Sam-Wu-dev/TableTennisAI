@@ -10,7 +10,7 @@ public class Ball : MonoBehaviour
     /// </summary>
     [Tooltip("Agents hitting this ball.")]
     public TableTennisAgent[] Agents = new TableTennisAgent[2];
-
+    private TableTennisAgent _lastHitter;
 
     /// <summary>
     /// Runs when the ball hits the Collider.
@@ -31,22 +31,16 @@ public class Ball : MonoBehaviour
         {
             Debug.Log("racket hit");
             // Call the BallHit() of the Agent that hit the ball.
-            collision.collider.transform.parent.GetComponent<TableTennisAgent>().BallHit();
+            var agent = collision.collider.transform.parent.GetComponent<TableTennisAgent>();
+            _lastHitter = agent;
+            agent.BallHit();
         }
 
         // bounces on the table
-        if (collision.collider.transform.parent != null && collision.collider.transform.parent.CompareTag("table"))
+        if (collision.collider.CompareTag("table"))
         {
-            Debug.Log("table collide");
-            // collide the net even on the table. colliding with table is not processed.
-            if (collision.collider.CompareTag("net"))
-            {
-                Agents[0].BallNetted();
-                Agents[1].BallNetted();
-                return;
-            }
-            Agents[0].BallBounced(collision.collider);
-            Agents[1].BallBounced(collision.collider);
+            Debug.Log("valid table bounce");
+            _lastHitter?.BallBounced(collision.collider);
         }
     }
 }
