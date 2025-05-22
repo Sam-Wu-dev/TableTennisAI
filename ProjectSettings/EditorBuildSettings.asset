@@ -6,6 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/RacketTorqueScene.unity
-    guid: 32c6fc2162188064dbbc2d420a8b8e6f
+    path: Assets/Scenes/TableTennisScene.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0

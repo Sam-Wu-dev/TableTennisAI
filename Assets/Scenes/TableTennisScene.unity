@@ -9805,7 +9805,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0.17198227, y: -0.68587327, z: 0.17198227, w: 0.68587327}
-  m_LocalPosition: {x: 1.67, y: 1.98, z: -0}
+  m_LocalPosition: {x: 5.473, y: 4.015, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10233,6 +10233,11 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2003051855344596227, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: Agents.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3431964156425641646, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_TagString
@@ -10327,25 +10332,53 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: 6e146ab859a387d44b2a359fb0862c2f,
+      objectReference: {fileID: 0}
+    - target: {fileID: 5685513605235943919, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
+      propertyPath: m_BehaviorType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5685513605235943919, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_InferenceDevice
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5685513605235943919, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_BrainParameters.VectorObservationSize
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: 5685513605643523194, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: 6e146ab859a387d44b2a359fb0862c2f,
+      objectReference: {fileID: 0}
+    - target: {fileID: 5685513605643523194, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
+      propertyPath: m_BehaviorType
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5685513605643523194, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_InferenceDevice
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5685513605643523194, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_BrainParameters.VectorObservationSize
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 5685513605643523194, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_BrainParameters.NumStackedVectorObservations
+      value: 13
+      objectReference: {fileID: 0}
     - target: {fileID: 5720511774935088719, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5720511776400114650, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -10363,7 +10396,22 @@ PrefabInstance:
     - target: {fileID: 8560351063863894430, guid: 76d371e023a70b643bc1058b83a027c9,
         type: 3}
       propertyPath: DecisionPeriod
-      value: 5
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8560351063863894430, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: TakeActionsBetweenDecisions
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8560351065060137995, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: DecisionStep
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8560351065060137995, guid: 76d371e023a70b643bc1058b83a027c9,
+        type: 3}
+      propertyPath: TakeActionsBetweenDecisions
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
