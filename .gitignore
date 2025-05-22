@@ -28,6 +28,7 @@ ExportedObj/
 # Unity
 /UserSettings
 /Logs
+/Unity_env
 
 # Unity3D generated meta files
 *.pidb.meta
