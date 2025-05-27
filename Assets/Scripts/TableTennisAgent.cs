@@ -14,9 +14,12 @@ public class TableTennisAgent : Agent
     public Collider TableCollider_2;
     public Collider moveArea_1;
     public Collider moveArea_2;
+    public Transform ahchor1;
+    public Transform ahchor2;
 
     private Collider opponentArea;
     private Collider moveArea;
+    private Transform anchor;
     private Transform Racket;
     private Vector3 defaultRacketPos;
     private Quaternion defaultRacketRot;
@@ -40,6 +43,7 @@ public class TableTennisAgent : Agent
 
         opponentArea = Vector3.Distance(Racket.position, TableCollider_1.transform.position) < Vector3.Distance(Racket.position, TableCollider_2.transform.position) ? TableCollider_2 : TableCollider_1;
         moveArea = Vector3.Distance(Racket.position, moveArea_1.transform.position) < Vector3.Distance(Racket.position, moveArea_2.transform.position) ? moveArea_1 : moveArea_2;
+        anchor = Vector3.Distance(Racket.position, ahchor1.transform.position) < Vector3.Distance(Racket.position, ahchor2.transform.position) ? ahchor1 : ahchor2;
     }
 
     public override void OnEpisodeBegin()
@@ -74,20 +78,31 @@ public class TableTennisAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        Vector3 localtoBall = transform.InverseTransformDirection(Ball.position - Racket.position);
-        sensor.AddObservation(localtoBall);
-        sensor.AddObservation(ballRb.linearVelocity);
+        // 1) Ball position relative to the chosen anchor
+        Vector3 localBallPos = anchor.InverseTransformPoint(Ball.position);
+        sensor.AddObservation(localBallPos);
 
-        Vector3 toGoal = opponentArea.transform.position - Ball.position;
-        sensor.AddObservation(toGoal);
+        // 2) Racket position relative to the same anchor
+        Vector3 localRacketPos = anchor.InverseTransformPoint(Racket.position);
+        sensor.AddObservation(localRacketPos);
 
-        Vector3 normEuler = Racket.localEulerAngles / 360f;
-        sensor.AddObservation(normEuler);
+        // 3) Ball velocity in anchor‐local axes
+        Vector3 localBallVel = anchor.InverseTransformDirection(ballRb.linearVelocity);
+        sensor.AddObservation(localBallVel);
 
-        // 球是否朝我飛來的特徵
-        float towardMe = Vector3.Dot(ballRb.linearVelocity.normalized, (Racket.position - Ball.position).normalized);
-        sensor.AddObservation(towardMe);
+        // 4) Ball rotational speed (angular velocity) in anchor‐local space
+        Vector3 localBallAngVel = anchor.InverseTransformDirection(ballRb.angularVelocity);
+        sensor.AddObservation(localBallAngVel);
+
+        // 5) Racket rotation in anchor‐local space (as normalized Euler angles)
+        Quaternion relRot = Quaternion.Inverse(anchor.rotation) * Racket.rotation;
+        Vector3 localRacketEuler = relRot.eulerAngles / 360f;
+        sensor.AddObservation(localRacketEuler);
+
+        // bool isServing;
+        // sensor.AddObservation(isServing);
     }
+
 
     public override void OnActionReceived(ActionBuffers actions)
     {

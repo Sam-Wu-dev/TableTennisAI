@@ -1,17 +1,49 @@
 ﻿using System.Collections;
 using UnityEngine;
+using Unity.MLAgents;
 
 public class Ball : MonoBehaviour
 {
     [Tooltip("Agents hitting this ball.")]
-    public TableTennisAgent[] Agents = new TableTennisAgent[1];
+    public TableTennisAgent[] Agents = new TableTennisAgent[2];
     private TableTennisAgent _lastHitter;
 
     private Rigidbody ballRigidbody;
 
+    private float tableContactTimer = 0f;
+    private const float minTableContactTime = 1f;
     void Start()
     {
         ballRigidbody = GetComponent<Rigidbody>();
+    }
+
+    private void EndEpisode()
+    {
+        foreach (var agent in Agents)
+        {
+            agent.EndEpisode();
+        }
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.collider.CompareTag("table"))
+        {
+            tableContactTimer += Time.deltaTime;
+            if (tableContactTimer >= minTableContactTime)
+            {
+                EndEpisode();
+            }
+        }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.collider.CompareTag("table"))
+        {
+            // left the table: reset everything
+            tableContactTimer = 0f;
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -19,10 +51,10 @@ public class Ball : MonoBehaviour
         // fall to the floor
         if (collision.collider.CompareTag("floor"))
         {
-            //Agents[0].BallDropped();
-            //Agents[1].BallDropped();
-            //Debug.Log(_lastHitter.ToString());
             Agents[0].BallDropped();
+            Agents[1].BallDropped();
+            //Debug.Log(_lastHitter.ToString());
+            // Agents[0].BallDropped();
         }
 
         // Hit the racket
@@ -37,6 +69,7 @@ public class Ball : MonoBehaviour
         // bounces on the table
         if (collision.collider.CompareTag("table"))
         {
+            tableContactTimer = 0f;
             //Debug.Log("valid table bounce");
             Agents[0]?.BallBounced(collision.collider);
         }
