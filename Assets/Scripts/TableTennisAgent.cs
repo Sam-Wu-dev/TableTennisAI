@@ -5,6 +5,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
 using System.Linq;
+using Unity.MLAgents.Policies;
 
 public class TableTennisAgent : Agent
 {
@@ -17,6 +18,11 @@ public class TableTennisAgent : Agent
     public Transform ahchor1;
     public Transform ahchor2;
 
+    private int teamId;
+    private static int serverTeamId = 0;
+    private static int serveCount = 0;
+    private const int maxServeCount = 2;    // 每隊發球次數上限
+    private static bool isFirstInEpisode = true; // NEW
     private Collider opponentArea;
     private Collider moveArea;
     private Transform anchor;
@@ -40,6 +46,7 @@ public class TableTennisAgent : Agent
 
         racketRb = GetComponent<Rigidbody>();
         ballRb = Ball.GetComponent<Rigidbody>();
+        teamId = GetComponent<BehaviorParameters>().TeamId;
 
         opponentArea = Vector3.Distance(Racket.position, TableCollider_1.transform.position) < Vector3.Distance(Racket.position, TableCollider_2.transform.position) ? TableCollider_2 : TableCollider_1;
         moveArea = Vector3.Distance(Racket.position, moveArea_1.transform.position) < Vector3.Distance(Racket.position, moveArea_2.transform.position) ? moveArea_1 : moveArea_2;
@@ -49,7 +56,22 @@ public class TableTennisAgent : Agent
     public override void OnEpisodeBegin()
     {
         // 隨機選擇這一局是發球還是接球
-        isServing = Random.value < 0.5f;
+        //isServing = Random.value < 0.5f;
+        if (isFirstInEpisode && teamId == serverTeamId)
+        {
+            serveCount++;                         
+
+            if (serveCount > maxServeCount)      
+            {
+                serverTeamId = 1 - serverTeamId;  
+                serveCount = 0;                   
+            }
+
+            isFirstInEpisode = false;
+        }
+
+        isServing = (teamId == serverTeamId);
+        //Debug.Log($"{teamId} serverCount : {serveCount} {isServing}");
 
         var b = moveArea.bounds;
         float x = Random.Range(b.min.x, b.max.x);
@@ -63,62 +85,96 @@ public class TableTennisAgent : Agent
             ballRb.angularVelocity = Vector3.zero;
             ballRb.AddForce(Vector3.up * 0.1f);
         }
-        else
-        {
-            Ball.position = opponentArea.transform.position + Vector3.up * 0.8f;
-            Vector3 towardMe = (Racket.position - Ball.position).normalized;
-            ballRb.linearVelocity = towardMe * 4f;
-            ballRb.angularVelocity = Vector3.zero;
-        }
+        //else
+        //{
+        //    Ball.position = opponentArea.transform.position + Vector3.up * 0.8f;
+        //    Vector3 towardMe = (Racket.position - Ball.position).normalized;
+        //    ballRb.linearVelocity = towardMe * 4f;
+        //    ballRb.angularVelocity = Vector3.zero;
+        //}
 
         isHitable = true;
         bounceCount = 0;
         beforeRacketPos = Racket.position;
     }
-
     public override void CollectObservations(VectorSensor sensor)
     {
-        // 1) Ball position relative to the chosen anchor
-        Vector3 localBallPos = anchor.InverseTransformPoint(Ball.position);
-        sensor.AddObservation(localBallPos);
+        // 既有觀察
+        sensor.AddObservation(anchor.InverseTransformPoint(Ball.position));        // 3
+        sensor.AddObservation(anchor.InverseTransformPoint(Racket.position));      // 3
+        sensor.AddObservation(anchor.InverseTransformDirection(ballRb.linearVelocity));  // 3
+        sensor.AddObservation(anchor.InverseTransformDirection(ballRb.angularVelocity)); //3
 
-        // 2) Racket position relative to the same anchor
-        Vector3 localRacketPos = anchor.InverseTransformPoint(Racket.position);
-        sensor.AddObservation(localRacketPos);
+        // 新增：拍面線速度與角速度
+        //sensor.AddObservation(anchor.InverseTransformDirection(racketRb.linearVelocity));  // 3
+        //sensor.AddObservation(anchor.InverseTransformDirection(racketRb.angularVelocity)); // 3
 
-        // 3) Ball velocity in anchor‐local axes
-        Vector3 localBallVel = anchor.InverseTransformDirection(ballRb.linearVelocity);
-        sensor.AddObservation(localBallVel);
+        // 新增：相對向量（Ball→Racket）
+        sensor.AddObservation(anchor.InverseTransformDirection(Ball.position - Racket.position)); //3
 
-        // 4) Ball rotational speed (angular velocity) in anchor‐local space
-        Vector3 localBallAngVel = anchor.InverseTransformDirection(ballRb.angularVelocity);
-        sensor.AddObservation(localBallAngVel);
+        // 新增：球離桌高度（正規化到桌高 0.76 m）
+        //float h = (Ball.position.y - TableCollider_1.bounds.max.y) / 0.76f;
+        //sensor.AddObservation(h); // 1
 
-        // 5) Racket rotation in anchor‐local space (as normalized Euler angles)
+        // 方向無環跳，改用 sin/cos 編碼
         Quaternion relRot = Quaternion.Inverse(anchor.rotation) * Racket.rotation;
-        Vector3 localRacketEuler = relRot.eulerAngles / 360f;
-        sensor.AddObservation(localRacketEuler);
+        Vector3 e = relRot.eulerAngles * Mathf.Deg2Rad;
+        sensor.AddObservation(Mathf.Sin(e.x)); sensor.AddObservation(Mathf.Cos(e.x));
+        sensor.AddObservation(Mathf.Sin(e.y)); sensor.AddObservation(Mathf.Cos(e.y));
+        sensor.AddObservation(Mathf.Sin(e.z)); sensor.AddObservation(Mathf.Cos(e.z)); // 6
 
-        // bool isServing;
-        // sensor.AddObservation(isServing);
+        // Bool → float
+        sensor.AddObservation(isServing ? 1f : 0f);
+        sensor.AddObservation(isHitable ? 1f : 0f);
     }
 
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        //AddReward(1f / MaxStep);
-        racketRb.transform.Translate(new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]) * Time.deltaTime);
+        AddReward(0.01f);
+        //racketRb.transform.Translate(new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]) * Time.deltaTime);
 
+        //Collider[] colliders = Physics.OverlapSphere(racketRb.position, 0.002f);
+        //if (!colliders.Contains(moveArea))
+        //{
+        //    AddReward(-0.02f);
+        //    racketRb.transform.Translate(new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]) * Time.deltaTime * -1);
+        //}
+
+        //Racket.Rotate(new Vector3(1, 0, 0), Mathf.Clamp(actions.ContinuousActions[3] * 20, 0, 360));
+        //Racket.Rotate(new Vector3(0, 1, 0), Mathf.Clamp(actions.ContinuousActions[4] * 20, 0, 360));
+        //Racket.Rotate(new Vector3(0, 0, 1), Mathf.Clamp(actions.ContinuousActions[5] * 20, 0, 360));
+
+        // Extract movement and rotation actions
+        Vector3 localMove = new Vector3(
+            actions.ContinuousActions[0],
+            actions.ContinuousActions[1],
+            actions.ContinuousActions[2]
+        );
+
+        // Convert local movement direction into world space using the anchor's orientation
+        Vector3 worldMove = anchor.TransformDirection(localMove.normalized) * localMove.magnitude * Time.deltaTime;
+
+        // Try to move the racket
+        racketRb.transform.position += worldMove;
+
+        // Check if racket is still within the allowed move area
         Collider[] colliders = Physics.OverlapSphere(racketRb.position, 0.002f);
         if (!colliders.Contains(moveArea))
         {
             AddReward(-0.02f);
-            racketRb.transform.Translate(new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]) * Time.deltaTime * -1);
+            // Revert movement if out of bounds
+            racketRb.transform.position -= worldMove;
         }
 
-        Racket.Rotate(new Vector3(1, 0, 0), Mathf.Clamp(actions.ContinuousActions[3] * 20, 0, 360));
-        Racket.Rotate(new Vector3(0, 1, 0), Mathf.Clamp(actions.ContinuousActions[4] * 20, 0, 360));
-        Racket.Rotate(new Vector3(0, 0, 1), Mathf.Clamp(actions.ContinuousActions[5] * 20, 0, 360));
+        // Apply rotation (still in world space for now)
+        float rotX = Mathf.Clamp(actions.ContinuousActions[3] * 20, 0, 360);
+        float rotY = Mathf.Clamp(actions.ContinuousActions[4] * 20, 0, 360);
+        float rotZ = Mathf.Clamp(actions.ContinuousActions[5] * 20, 0, 360);
+        Racket.Rotate(new Vector3(1, 0, 0), rotX, Space.Self);
+        Racket.Rotate(new Vector3(0, 1, 0), rotY, Space.Self);
+        Racket.Rotate(new Vector3(0, 0, 1), rotZ, Space.Self);
+
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -136,14 +192,15 @@ public class TableTennisAgent : Agent
 
     public void BallDropped()
     {
-        Debug.Log("dropped");
+        //Debug.Log("dropped");
         AddReward(-0.5f);
+        isFirstInEpisode = true;
         EndEpisode();
     }
 
     public void BallHit()
     {
-        if (!isHitable) EndEpisode();
+        //if (!isHitable) EndEpisode();
         AddReward(10f);
         isHitable = false;
     }
@@ -151,16 +208,16 @@ public class TableTennisAgent : Agent
     public void BallBounced(Collider collidedZone)
     {
         bounceCount++;
-        //Debug.Log($"Bounced {bounceCount}");
+        Debug.Log($"{teamId} : Bounced {bounceCount}");
         //Debug.Log($"collidedZone.name {collidedZone.name}");
         //Debug.Log($"opponentArea {opponentArea.name}");
-        if (bounceCount == 1 && !isServing)
+        if (bounceCount == 1 && !isServing) // 發球不算bounceCount 所以這是發球後第一次打過去
         {
-            if (collidedZone == opponentArea)
+            if (collidedZone == opponentArea)   // 發球如果打到別人桌子
             {
                 AddReward(-0.3f);
+                isFirstInEpisode = true;
                 EndEpisode();
-                return;
             }
             else
             {
@@ -168,7 +225,7 @@ public class TableTennisAgent : Agent
                 Debug.Log("0.3f");
             }
         }
-        else if (bounceCount == 2)
+        else if (bounceCount >= 2)  // 擊球後
         {
             if (collidedZone == opponentArea)
             {
@@ -176,9 +233,11 @@ public class TableTennisAgent : Agent
             }
             else
             {
-                AddReward(-0.5f);
+                AddReward(-1f);
+                isFirstInEpisode = true;
+                EndEpisode();
             }
-            EndEpisode();
+            //EndEpisode();
         }
     }
 

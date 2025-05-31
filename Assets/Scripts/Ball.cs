@@ -71,7 +71,23 @@ public class Ball : MonoBehaviour
         {
             tableContactTimer = 0f;
             //Debug.Log("valid table bounce");
-            Agents[0]?.BallBounced(collision.collider);
+            _lastHitter?.BallBounced(collision.collider);
+            if (_lastHitter != null)
+            {
+                foreach (var agent in Agents)
+                {
+                    if (agent != _lastHitter)
+                    {
+                        agent.AddReward(20.0f);
+                        agent.EndEpisode();
+                    }
+                    else
+                    {
+                        agent.AddReward(-10.0f);
+                        agent.EndEpisode();
+                    }
+                }
+            }
         }
     }
 
