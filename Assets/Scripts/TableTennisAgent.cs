@@ -33,7 +33,7 @@ public class TableTennisAgent : Agent
     private Rigidbody racketRb;
     private Rigidbody ballRb;
 
-    private bool isServing;
+    public bool isServing;
     private bool isHitable;
     private int bounceCount;
 

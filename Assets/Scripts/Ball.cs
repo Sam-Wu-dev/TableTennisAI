@@ -51,6 +51,36 @@ public class Ball : MonoBehaviour
         // fall to the floor
         if (collision.collider.CompareTag("floor"))
         {
+            if (_lastHitter != null)
+            {
+                foreach (var agent in Agents)
+                {
+                    if (agent == _lastHitter)
+                    {
+                        agent.AddReward(+1.0f);  // 上一個擊球者得分
+                    }
+                    else
+                    {
+                        agent.AddReward(-1.0f);  // 沒接到球的人扣分
+                    }
+                }
+            }
+            else
+            {
+                // 沒人擊球就掉地 → 代表發球方失誤
+                foreach (var agent in Agents)
+                {
+                    if (agent.isServing) // ⬅️ 你要實作這個 API
+                    {
+                        agent.AddReward(-1.0f);  // 發球方被罰
+                    }
+                    else
+                    {
+                        agent.AddReward(+1.0f);  // 對手得分
+                    }
+                }
+            }
+
             Agents[0].BallDropped();
             Agents[1].BallDropped();
             //Debug.Log(_lastHitter.ToString());
@@ -72,22 +102,7 @@ public class Ball : MonoBehaviour
             tableContactTimer = 0f;
             //Debug.Log("valid table bounce");
             _lastHitter?.BallBounced(collision.collider);
-            if (_lastHitter != null)
-            {
-                foreach (var agent in Agents)
-                {
-                    if (agent != _lastHitter)
-                    {
-                        agent.AddReward(20.0f);
-                        agent.EndEpisode();
-                    }
-                    else
-                    {
-                        agent.AddReward(-10.0f);
-                        agent.EndEpisode();
-                    }
-                }
-            }
+
         }
     }
 
