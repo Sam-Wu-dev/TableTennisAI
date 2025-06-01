@@ -207,7 +207,7 @@ public class TableTennisAgent : Agent
         //isHitable = false;
     }
 
-    public bool BallBounced(Collider collidedZone, TableTennisAgent _previousHitter)
+    public bool BallBounced(Collider collidedZone, TableTennisAgent _previousHitter, TableTennisAgent _lastHitter)
     {
         bounceCount++;
         //Debug.Log($"{teamId} : Bounced {bounceCount}");
@@ -282,39 +282,38 @@ public class TableTennisAgent : Agent
         {
             if (bounceCount == 1)
             {
-                // 第一次彈跳：應該落在對方桌上
+                // 應該落在對方桌上
                 if (collidedZone == opponentArea)
                 {
                     AddReward(20f);
-                    Debug.Log("擊球成功，第一次彈跳落對面桌");
+                    Debug.Log("20f collidedZone == opponentArea");
                     LastCollider = collidedZone;
-                    return true; // 回合繼續，對方應該接球
+                    return true; // 回合繼續
                 }
                 else
                 {
                     AddReward(-5f);
-                    Debug.Log("第一次彈跳失誤，落回自己桌/出界");
+                    Debug.Log("-5f 打回自己桌");
                     isFirstInEpisode = true;
-                    EndEpisode();
                     return false;
                 }
             }
             else if (bounceCount >= 2)
             {
-                // 第二次彈跳的處理關鍵：根據 lastHitter 判斷
+                // 打第二次
                 if (collidedZone == opponentArea)
                 {
-                    if (LastCollider == opponentArea)
+                    if (_lastHitter == this && LastCollider == opponentArea)
                     {
-                        // 球落對面，上一個是我打的 → 對方沒接到，我得分
+                        // 球落對面 且在對面彈兩下
                         AddReward(20f);
-                        Debug.Log("對手未接到，第二次彈跳落對面桌，我方得分");
+                        Debug.Log("20f 對手未接到 第二次彈跳落對面桌 我方得分");
                         isFirstInEpisode = true;
                         return false;
                     }
                     else
                     {
-                        // 球落對面，上一個是對方 → 合法回擊繼續
+                        // 球落對面且上一個是對方擊球的 那就繼續
                         AddReward(20f);
                         Debug.Log("對方回擊後落對面桌，回合繼續");
                         LastCollider = collidedZone;
@@ -323,7 +322,7 @@ public class TableTennisAgent : Agent
                 }
                 else
                 {
-                    // 球落自己桌子或出界，失誤
+                    // 球落自己桌子
                     AddReward(-5f);
                     Debug.Log("第二次彈跳落回自己桌/出界，失誤");
                     isFirstInEpisode = true;

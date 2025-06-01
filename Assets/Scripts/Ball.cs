@@ -124,7 +124,7 @@ public class Ball : MonoBehaviour
             bool legal = true;
             if (_lastHitter != null)
             {
-                legal = _lastHitter.BallBounced(collision.collider, _previousHitter);
+                legal = _lastHitter.BallBounced(collision.collider, _previousHitter, _lastHitter);
             }
             Debug.Log(legal);
             if (!legal)
