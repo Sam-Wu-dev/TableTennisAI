@@ -70,7 +70,7 @@ public class Ball : MonoBehaviour
                 // 沒人擊球就掉地 → 代表發球方失誤
                 foreach (var agent in Agents)
                 {
-                    if (agent.isServing) // ⬅️ 你要實作這個 API
+                    if (agent.isServing) 
                     {
                         agent.AddReward(-1.0f);  // 發球方被罰
                     }
@@ -101,7 +101,19 @@ public class Ball : MonoBehaviour
         {
             tableContactTimer = 0f;
             //Debug.Log("valid table bounce");
-            _lastHitter?.BallBounced(collision.collider);
+            bool legal = true;
+            if (_lastHitter != null)
+            {
+                legal = _lastHitter.BallBounced(collision.collider);
+            }
+            Debug.Log(legal);
+            if (!legal)
+            {
+                foreach (var agent in Agents)
+                {
+                    agent.EndEpisode();
+                }
+            }
 
         }
     }

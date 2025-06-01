@@ -13,6 +13,7 @@ public class TableTennisAgent : Agent
     public Transform Table;
     public Collider TableCollider_1;
     public Collider TableCollider_2;
+    public Collider LastCollider;
     public Collider moveArea_1;
     public Collider moveArea_2;
     public Transform ahchor1;
@@ -71,6 +72,7 @@ public class TableTennisAgent : Agent
         }
 
         isServing = (teamId == serverTeamId);
+        LastCollider = null;
         //Debug.Log($"{teamId} serverCount : {serveCount} {isServing}");
 
         var b = moveArea.bounds;
@@ -202,43 +204,66 @@ public class TableTennisAgent : Agent
     {
         //if (!isHitable) EndEpisode();
         AddReward(10f);
-        isHitable = false;
+        //isHitable = false;
     }
 
-    public void BallBounced(Collider collidedZone)
+    public bool BallBounced(Collider collidedZone)
     {
         bounceCount++;
-        Debug.Log($"{teamId} : Bounced {bounceCount}");
+        //Debug.Log($"{teamId} : Bounced {bounceCount}");
         //Debug.Log($"collidedZone.name {collidedZone.name}");
         //Debug.Log($"opponentArea {opponentArea.name}");
-        if (bounceCount == 1 && !isServing) // 發球不算bounceCount 所以這是發球後第一次打過去
+        if (bounceCount == 1 && isServing) 
         {
             if (collidedZone == opponentArea)   // 發球如果打到別人桌子
             {
-                AddReward(-0.3f);
+                AddReward(-5f);
                 isFirstInEpisode = true;
-                EndEpisode();
+                //EndEpisode();
+                return false;
             }
             else
             {
                 AddReward(20f);
                 Debug.Log("0.3f");
+                LastCollider = collidedZone;
+                return true;
             }
         }
         else if (bounceCount >= 2)  // 擊球後
         {
-            if (collidedZone == opponentArea)
+            if (LastCollider == null)
             {
-                AddReward(20f);
+                if (collidedZone == opponentArea)
+                {
+                    Debug.Log("nice area");
+                    AddReward(20f);
+                    LastCollider = collidedZone;
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("failed area");
+                    AddReward(-5f);
+                    isFirstInEpisode = true;
+                    //EndEpisode();
+                    return false;
+                }
             }
             else
             {
-                AddReward(-1f);
-                isFirstInEpisode = true;
-                EndEpisode();
+                if(LastCollider == collidedZone)
+                {
+                    Debug.Log("failed area 2");
+                    AddReward(-5f);
+                    isFirstInEpisode = true;
+                    //EndEpisode();
+                    return false;
+                }
             }
             //EndEpisode();
         }
+        return true;
     }
 
     void Update()

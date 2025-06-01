@@ -24,7 +24,7 @@ ExportedObj/
 *.pdb
 *.opendb
 *.VC.db
-
+*.onnx
 # Unity
 /UserSettings
 /Logs
