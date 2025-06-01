@@ -6,7 +6,8 @@ public class Ball : MonoBehaviour
 {
     [Tooltip("Agents hitting this ball.")]
     public TableTennisAgent[] Agents = new TableTennisAgent[2];
-    private TableTennisAgent _lastHitter;
+    private TableTennisAgent _lastHitter = null;
+    private TableTennisAgent _previousHitter = null;
 
     private Rigidbody ballRigidbody;
 
@@ -21,6 +22,10 @@ public class Ball : MonoBehaviour
     {
         foreach (var agent in Agents)
         {
+            if (agent.isServing)
+            {
+                agent.setisFirstInEpisode();
+            }
             agent.EndEpisode();
         }
     }
@@ -32,7 +37,19 @@ public class Ball : MonoBehaviour
             tableContactTimer += Time.deltaTime;
             if (tableContactTimer >= minTableContactTime)
             {
+                foreach (var agent in Agents)
+                {
+                    if (agent == _lastHitter)
+                    {
+                        Debug.Log("stay in the table");
+                        agent.AddReward(-5.0f); // 上次擊球方違規
+                    }
+                    else
+                        agent.AddReward(+5.0f);  // 對手得分
+                }
                 EndEpisode();
+                _lastHitter = null;
+                _previousHitter = null;
             }
         }
     }
@@ -57,11 +74,11 @@ public class Ball : MonoBehaviour
                 {
                     if (agent == _lastHitter)
                     {
-                        agent.AddReward(+1.0f);  // 上一個擊球者得分
+                        agent.AddReward(+20.0f);  // 上一個擊球者得分
                     }
                     else
                     {
-                        agent.AddReward(-1.0f);  // 沒接到球的人扣分
+                        agent.AddReward(-20.0f);  // 沒接到球的人扣分
                     }
                 }
             }
@@ -72,17 +89,19 @@ public class Ball : MonoBehaviour
                 {
                     if (agent.isServing) 
                     {
-                        agent.AddReward(-1.0f);  // 發球方被罰
+                        agent.AddReward(-20.0f);  // 發球方被罰
                     }
                     else
                     {
-                        agent.AddReward(+1.0f);  // 對手得分
+                        agent.AddReward(+20.0f);  // 對手得分
                     }
                 }
             }
 
             Agents[0].BallDropped();
             Agents[1].BallDropped();
+            _lastHitter = null;
+            _previousHitter = null;
             //Debug.Log(_lastHitter.ToString());
             // Agents[0].BallDropped();
         }
@@ -92,6 +111,7 @@ public class Ball : MonoBehaviour
         {
             //Debug.Log("racket hit");
             var agent = collision.collider.transform.parent.GetComponent<TableTennisAgent>();
+            _previousHitter = _lastHitter;
             _lastHitter = agent;
             agent.BallHit();
         }
@@ -104,7 +124,7 @@ public class Ball : MonoBehaviour
             bool legal = true;
             if (_lastHitter != null)
             {
-                legal = _lastHitter.BallBounced(collision.collider);
+                legal = _lastHitter.BallBounced(collision.collider, _previousHitter);
             }
             Debug.Log(legal);
             if (!legal)
@@ -112,6 +132,8 @@ public class Ball : MonoBehaviour
                 foreach (var agent in Agents)
                 {
                     agent.EndEpisode();
+                    _lastHitter = null;
+                    _previousHitter = null;
                 }
             }
 

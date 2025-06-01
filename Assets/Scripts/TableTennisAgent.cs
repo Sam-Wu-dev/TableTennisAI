@@ -23,7 +23,6 @@ public class TableTennisAgent : Agent
     private static int serverTeamId = 0;
     private static int serveCount = 0;
     private const int maxServeCount = 2;    // 每隊發球次數上限
-    private static bool isFirstInEpisode = true; // NEW
     private Collider opponentArea;
     private Collider moveArea;
     private Transform anchor;
@@ -34,6 +33,7 @@ public class TableTennisAgent : Agent
     private Rigidbody racketRb;
     private Rigidbody ballRb;
 
+    private static bool isFirstInEpisode = true; // NEW
     public bool isServing;
     private bool isHitable;
     private int bounceCount;
@@ -60,12 +60,12 @@ public class TableTennisAgent : Agent
         //isServing = Random.value < 0.5f;
         if (isFirstInEpisode && teamId == serverTeamId)
         {
-            serveCount++;                         
+            serveCount++;
 
-            if (serveCount > maxServeCount)      
+            if (serveCount > maxServeCount)
             {
-                serverTeamId = 1 - serverTeamId;  
-                serveCount = 0;                   
+                serverTeamId = 1 - serverTeamId;
+                serveCount = 0;
             }
 
             isFirstInEpisode = false;
@@ -133,7 +133,7 @@ public class TableTennisAgent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        AddReward(0.01f);
+        AddReward(0.001f);
         //racketRb.transform.Translate(new Vector3(actions.ContinuousActions[0], actions.ContinuousActions[1], actions.ContinuousActions[2]) * Time.deltaTime);
 
         //Collider[] colliders = Physics.OverlapSphere(racketRb.position, 0.002f);
@@ -207,61 +207,129 @@ public class TableTennisAgent : Agent
         //isHitable = false;
     }
 
-    public bool BallBounced(Collider collidedZone)
+    public bool BallBounced(Collider collidedZone, TableTennisAgent _previousHitter)
     {
         bounceCount++;
         //Debug.Log($"{teamId} : Bounced {bounceCount}");
         //Debug.Log($"collidedZone.name {collidedZone.name}");
         //Debug.Log($"opponentArea {opponentArea.name}");
-        if (bounceCount == 1 && isServing) 
+        if (isServing)
         {
-            if (collidedZone == opponentArea)   // 發球如果打到別人桌子
-            {
-                AddReward(-5f);
-                isFirstInEpisode = true;
-                //EndEpisode();
-                return false;
-            }
-            else
-            {
-                AddReward(20f);
-                Debug.Log("0.3f");
-                LastCollider = collidedZone;
-                return true;
-            }
-        }
-        else if (bounceCount >= 2)  // 擊球後
-        {
-            if (LastCollider == null)
+            if (bounceCount == 1)
             {
                 if (collidedZone == opponentArea)
                 {
-                    Debug.Log("nice area");
-                    AddReward(20f);
+                    AddReward(-5f);
+                    Debug.Log("-5f");
+                    isFirstInEpisode = true;
+                    return false;
+                }
+                else
+                {
+                    AddReward(5f);
+                    Debug.Log("5f");
+                    LastCollider = collidedZone;
+                    return true;
+                }
+            }
+            else if (bounceCount == 2)
+            {
+                if (collidedZone == opponentArea)
+                {
+                    AddReward(5f);
+                    Debug.Log("5f");
                     LastCollider = collidedZone;
                     return true;
                 }
                 else
                 {
-                    Debug.Log("failed area");
                     AddReward(-5f);
+                    Debug.Log("-5f");
                     isFirstInEpisode = true;
                     //EndEpisode();
                     return false;
                 }
             }
-            else
+            else if (bounceCount >= 3) // 對方擊球後又打過去 或是發球後在對方區域連彈兩次(我方得分)
             {
-                if(LastCollider == collidedZone)
+                if (collidedZone == opponentArea)
                 {
-                    Debug.Log("failed area 2");
+                    if (_previousHitter == null) // 代表發球過去後 彈對面桌子第二下 我方贏
+                    {
+                        AddReward(20f);
+                        Debug.Log("20f _previousHitter == null");
+                        isFirstInEpisode = true;
+                        return false;
+                    }
+                    else if (_previousHitter == this) // 我方打過去對面桌子
+                    {
+                        AddReward(20f);
+                        Debug.Log("20f _previousHitter == this");
+                        LastCollider = collidedZone;
+                        return true;
+                    }
+                }
+                else
+                {
                     AddReward(-5f);
+                    Debug.Log("-5f");
                     isFirstInEpisode = true;
-                    //EndEpisode();
                     return false;
                 }
             }
-            //EndEpisode();
+        }
+        else if (!isServing)    // 擊球方
+        {
+            if (bounceCount == 1)
+            {
+                // 第一次彈跳：應該落在對方桌上
+                if (collidedZone == opponentArea)
+                {
+                    AddReward(20f);
+                    Debug.Log("擊球成功，第一次彈跳落對面桌");
+                    LastCollider = collidedZone;
+                    return true; // 回合繼續，對方應該接球
+                }
+                else
+                {
+                    AddReward(-5f);
+                    Debug.Log("第一次彈跳失誤，落回自己桌/出界");
+                    isFirstInEpisode = true;
+                    EndEpisode();
+                    return false;
+                }
+            }
+            else if (bounceCount >= 2)
+            {
+                // 第二次彈跳的處理關鍵：根據 lastHitter 判斷
+                if (collidedZone == opponentArea)
+                {
+                    if (LastCollider == opponentArea)
+                    {
+                        // 球落對面，上一個是我打的 → 對方沒接到，我得分
+                        AddReward(20f);
+                        Debug.Log("對手未接到，第二次彈跳落對面桌，我方得分");
+                        isFirstInEpisode = true;
+                        return false;
+                    }
+                    else
+                    {
+                        // 球落對面，上一個是對方 → 合法回擊繼續
+                        AddReward(20f);
+                        Debug.Log("對方回擊後落對面桌，回合繼續");
+                        LastCollider = collidedZone;
+                        return true;
+                    }
+                }
+                else
+                {
+                    // 球落自己桌子或出界，失誤
+                    AddReward(-5f);
+                    Debug.Log("第二次彈跳落回自己桌/出界，失誤");
+                    isFirstInEpisode = true;
+                    return false;
+                }
+            }
         }
         return true;
     }
@@ -277,5 +345,10 @@ public class TableTennisAgent : Agent
         {
             beforeRacketPos = racketRb.position;
         }
+    }
+
+    public void setisFirstInEpisode()
+    {
+        isFirstInEpisode = true;
     }
 }
