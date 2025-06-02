@@ -42,7 +42,7 @@ public class Ball : MonoBehaviour
                     if (agent == _lastHitter)
                     {
                         Debug.Log("stay in the table");
-                        agent.AddReward(-5.0f); // 上次擊球方違規
+                        agent.AddReward(-5.0f); // 擊球違規
                     }
                     else
                         agent.AddReward(+5.0f);  // 對手得分
@@ -74,7 +74,7 @@ public class Ball : MonoBehaviour
                 {
                     if (agent == _lastHitter)
                     {
-                        agent.AddReward(+20.0f);  // 上一個擊球者得分
+                        agent.AddReward(+20.0f);  // 擊球者得分
                     }
                     else
                     {
@@ -84,12 +84,12 @@ public class Ball : MonoBehaviour
             }
             else
             {
-                // 沒人擊球就掉地 → 代表發球方失誤
+                // 發球方失誤
                 foreach (var agent in Agents)
                 {
                     if (agent.isServing) 
                     {
-                        agent.AddReward(-20.0f);  // 發球方被罰
+                        agent.AddReward(-20.0f);  // 發球方扣分
                     }
                     else
                     {
@@ -142,7 +142,7 @@ public class Ball : MonoBehaviour
 
     void FixedUpdate()
     {
-        float gravityScale = 0.3f; // 小於 1 時讓球下落變慢
+        float gravityScale = 0.3f; // 讓球下落變慢 不然下落太快拍子很難打
         Vector3 gravity = Physics.gravity * gravityScale;
         ballRigidbody.AddForce(gravity - Physics.gravity, ForceMode.Acceleration);
     }

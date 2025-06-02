@@ -22,7 +22,7 @@ public class TableTennisAgent : Agent
     private int teamId;
     private static int serverTeamId = 0;
     private static int serveCount = 0;
-    private const int maxServeCount = 2;    // 每隊發球次數上限
+    private const int maxServeCount = 2;    // 發球次數上限
     private Collider opponentArea;
     private Collider moveArea;
     private Transform anchor;
@@ -33,7 +33,7 @@ public class TableTennisAgent : Agent
     private Rigidbody racketRb;
     private Rigidbody ballRb;
 
-    private static bool isFirstInEpisode = true; // NEW
+    private static bool isFirstInEpisode = true; 
     public bool isServing;
     private bool isHitable;
     private int bounceCount;
@@ -101,31 +101,23 @@ public class TableTennisAgent : Agent
     }
     public override void CollectObservations(VectorSensor sensor)
     {
-        // 既有觀察
+        // 把所有obs都轉到anchor space上
         sensor.AddObservation(anchor.InverseTransformPoint(Ball.position));        // 3
         sensor.AddObservation(anchor.InverseTransformPoint(Racket.position));      // 3
         sensor.AddObservation(anchor.InverseTransformDirection(ballRb.linearVelocity));  // 3
         sensor.AddObservation(anchor.InverseTransformDirection(ballRb.angularVelocity)); //3
 
-        // 新增：拍面線速度與角速度
-        //sensor.AddObservation(anchor.InverseTransformDirection(racketRb.linearVelocity));  // 3
-        //sensor.AddObservation(anchor.InverseTransformDirection(racketRb.angularVelocity)); // 3
-
-        // 新增：相對向量（Ball→Racket）
+        // Ball和Racket的相對向量
         sensor.AddObservation(anchor.InverseTransformDirection(Ball.position - Racket.position)); //3
 
-        // 新增：球離桌高度（正規化到桌高 0.76 m）
-        //float h = (Ball.position.y - TableCollider_1.bounds.max.y) / 0.76f;
-        //sensor.AddObservation(h); // 1
-
-        // 方向無環跳，改用 sin/cos 編碼
+        // 方向
         Quaternion relRot = Quaternion.Inverse(anchor.rotation) * Racket.rotation;
         Vector3 e = relRot.eulerAngles * Mathf.Deg2Rad;
         sensor.AddObservation(Mathf.Sin(e.x)); sensor.AddObservation(Mathf.Cos(e.x));
         sensor.AddObservation(Mathf.Sin(e.y)); sensor.AddObservation(Mathf.Cos(e.y));
         sensor.AddObservation(Mathf.Sin(e.z)); sensor.AddObservation(Mathf.Cos(e.z)); // 6
 
-        // Bool → float
+        // 判斷發球 擊球 
         sensor.AddObservation(isServing ? 1f : 0f);
         sensor.AddObservation(isHitable ? 1f : 0f);
     }
@@ -182,7 +174,6 @@ public class TableTennisAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var continuousActionsOut = actionsOut.ContinuousActions;
-
         continuousActionsOut[0] = Input.GetKey(KeyCode.W) ? 1f : Input.GetKey(KeyCode.S) ? -1f : 0f;
         continuousActionsOut[1] = Input.GetKey(KeyCode.E) ? 1f : Input.GetKey(KeyCode.C) ? -1f : 0f;
         continuousActionsOut[2] = Input.GetKey(KeyCode.D) ? 1f : Input.GetKey(KeyCode.A) ? -1f : 0f;
@@ -190,6 +181,7 @@ public class TableTennisAgent : Agent
         continuousActionsOut[3] = Input.GetKey(KeyCode.UpArrow) ? 1f : Input.GetKey(KeyCode.DownArrow) ? -1f : 0f;
         continuousActionsOut[4] = Input.GetKey(KeyCode.LeftArrow) ? 1f : Input.GetKey(KeyCode.RightArrow) ? -1f : 0f;
         continuousActionsOut[5] = 0f;
+
     }
 
     public void BallDropped()
@@ -213,7 +205,7 @@ public class TableTennisAgent : Agent
         //Debug.Log($"{teamId} : Bounced {bounceCount}");
         //Debug.Log($"collidedZone.name {collidedZone.name}");
         //Debug.Log($"opponentArea {opponentArea.name}");
-        if (isServing)
+        if (isServing)  // 發球方
         {
             if (bounceCount == 1)
             {
@@ -246,11 +238,10 @@ public class TableTennisAgent : Agent
                     AddReward(-5f);
                     Debug.Log("-5f");
                     isFirstInEpisode = true;
-                    //EndEpisode();
                     return false;
                 }
             }
-            else if (bounceCount >= 3) // 對方擊球後又打過去 或是發球後在對方區域連彈兩次(我方得分)
+            else if (bounceCount >= 3) // 對方擊球後又打過去 或是發球後在對方區域連彈兩次 我方贏
             {
                 if (collidedZone == opponentArea)
                 {
@@ -293,7 +284,7 @@ public class TableTennisAgent : Agent
                 else
                 {
                     AddReward(-5f);
-                    Debug.Log("-5f 打回自己桌");
+                    Debug.Log("-5f");
                     isFirstInEpisode = true;
                     return false;
                 }
@@ -305,17 +296,17 @@ public class TableTennisAgent : Agent
                 {
                     if (_lastHitter == this && LastCollider == opponentArea)
                     {
-                        // 球落對面 且在對面彈兩下
+                        // 球落對面 且在對面桌子上彈兩下
                         AddReward(20f);
-                        Debug.Log("20f 對手未接到 第二次彈跳落對面桌 我方得分");
+                        Debug.Log("20f");
                         isFirstInEpisode = true;
                         return false;
                     }
                     else
                     {
-                        // 球落對面且上一個是對方擊球的 那就繼續
+                        // 球落對面且上一個是對方打的 那就繼續
                         AddReward(20f);
-                        Debug.Log("對方回擊後落對面桌，回合繼續");
+                        Debug.Log("20f");
                         LastCollider = collidedZone;
                         return true;
                     }
@@ -324,7 +315,7 @@ public class TableTennisAgent : Agent
                 {
                     // 球落自己桌子
                     AddReward(-5f);
-                    Debug.Log("第二次彈跳落回自己桌/出界，失誤");
+                    Debug.Log("-5f");
                     isFirstInEpisode = true;
                     return false;
                 }
