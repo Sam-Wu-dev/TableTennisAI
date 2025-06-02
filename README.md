@@ -8,7 +8,7 @@ A project that tried creating an AI that plays table tennis using MLAgents.
 
 ## Stage 1: Table tennis skill training 
 
-https://drive.google.com/file/d/1xrZPFMeTLr-zG5jbPeN2me0glsLfdxXN/view?usp=sharing
+<video src="https://github.com/user-attachments/assets/00fe5283-2fe2-4836-8670-c1e6c5b58312" controls width="600"></video>
 
 ## Stage 2: Cooperative Rally training
 
