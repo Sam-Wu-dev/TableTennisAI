@@ -12,7 +12,7 @@ A project that tried creating an AI that plays table tennis using MLAgents.
 
 ## Stage 2: Cooperative Rally training
 
-https://drive.google.com/file/d/1HHrsqJyjcgQgxDyYiMdD7PhiIlBhESmu/view?usp=sharing
+<video src="https://github.com/user-attachments/assets/0707e58d-5245-47bd-846f-0c2647e8d4c9" controls width="600"></video>
 
 # RL Training Methodology
 
