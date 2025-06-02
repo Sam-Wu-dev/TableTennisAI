@@ -2,7 +2,7 @@
 
 version: **Unity6000.0.41f1**
 
-A project that tried creating an AI that plays table tennis using MLAgents.
+A final project of NYCU RL class that tried creating an AI that plays table tennis using MLAgents.
 
 
 
